@@ -13,27 +13,20 @@ SCOPES = [
 ]
 
 def get_client():
-    # 1. Предпочтительно: base64 (не портится при вставке в Railway)
     b64 = os.getenv("GOOGLE_CREDENTIALS_B64")
-    if b64:
+    if not b64:
+        raise RuntimeError(
+            "Переменная GOOGLE_CREDENTIALS_B64 не найдена. "
+            "Добавь её в Railway → Variables."
+        )
+    try:
         raw = base64.b64decode(b64.strip()).decode("utf-8")
         info = json.loads(raw)
+        print(f"Ключ загружен для: {info.get('client_email', '?')}")
         creds = Credentials.from_service_account_info(info, scopes=SCOPES)
         return gspread.authorize(creds)
-
-    # 2. Обычный JSON в переменной
-    creds_json = os.getenv("GOOGLE_CREDENTIALS")
-    if creds_json:
-        info = json.loads(creds_json)
-        creds = Credentials.from_service_account_info(info, scopes=SCOPES)
-        return gspread.authorize(creds)
-
-    # 3. Файл (запасной вариант)
-    creds = Credentials.from_service_account_file(
-        "service_account.json",
-        scopes=SCOPES
-    )
-    return gspread.authorize(creds)
+    except Exception as e:
+        raise RuntimeError(f"Не удалось прочитать GOOGLE_CREDENTIALS_B64: {e}")
 
 def get_spreadsheet():
     client = get_client()
