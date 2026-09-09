@@ -437,25 +437,24 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE):
             logger.warning(f"Не удалось отправить напоминание {user_id}: {e}")
 
 def main():
-    # Создаём листы при старте
+    # Создаём листы при старте (не роняем бота, если таблица временно недоступна)
     try:
         sheets.ensure_sheets()
         print("Google Sheets готовы")
     except Exception as e:
         print(f"Ошибка при подготовке таблицы: {e}")
-        print("Проверь service_account.json и права доступа")
+        print("Проверь service_account.json и права доступа. Бот всё равно запустится.")
 
     app = Application.builder().token(BOT_TOKEN).build()
 
-    # Команды
+    # Команды (только латиница — Telegram не принимает кириллицу в CommandHandler)
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("помощь", help_command))
-    app.add_handler(CommandHandler("удалить", delete_last))
-    app.add_handler(CommandHandler("отчет", report_month))
-    app.add_handler(CommandHandler("отчет_прошлый", report_prev_month))
-    app.add_handler(CommandHandler("отчет_квартал", report_quarter))
-    app.add_handler(CommandHandler("отчет_год", report_year))
+    app.add_handler(CommandHandler("delete", delete_last))
+    app.add_handler(CommandHandler("report", report_month))
+    app.add_handler(CommandHandler("report_prev", report_prev_month))
+    app.add_handler(CommandHandler("report_quarter", report_quarter))
+    app.add_handler(CommandHandler("report_year", report_year))
 
     # Сообщения
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
