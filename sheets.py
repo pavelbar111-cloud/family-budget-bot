@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
@@ -12,17 +13,26 @@ SCOPES = [
 ]
 
 def get_client():
-    # Сначала пробуем переменную окружения (надёжнее на Railway)
+    # 1. Предпочтительно: base64 (не портится при вставке в Railway)
+    b64 = os.getenv("GOOGLE_CREDENTIALS_B64")
+    if b64:
+        raw = base64.b64decode(b64.strip()).decode("utf-8")
+        info = json.loads(raw)
+        creds = Credentials.from_service_account_info(info, scopes=SCOPES)
+        return gspread.authorize(creds)
+
+    # 2. Обычный JSON в переменной
     creds_json = os.getenv("GOOGLE_CREDENTIALS")
     if creds_json:
         info = json.loads(creds_json)
         creds = Credentials.from_service_account_info(info, scopes=SCOPES)
-    else:
-        # Запасной вариант — файл
-        creds = Credentials.from_service_account_file(
-            "service_account.json",
-            scopes=SCOPES
-        )
+        return gspread.authorize(creds)
+
+    # 3. Файл (запасной вариант)
+    creds = Credentials.from_service_account_file(
+        "service_account.json",
+        scopes=SCOPES
+    )
     return gspread.authorize(creds)
 
 def get_spreadsheet():
